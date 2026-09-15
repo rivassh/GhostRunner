@@ -1,0 +1,15 @@
+services:
+  recorder:
+    build: .
+    image: vnc-recorder:latest
+    container_name: vnc-recorder
+    working_dir: /app
+    volumes:
+      - ./:/app
+    stdin_open: true
+    tty: true
+    command: python recorder.py
+    environment:
+      - PYTHONUNBUFFERED=1
+    shm_size: 1gb
+    restart: unless-stopped

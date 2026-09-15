@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+ENV/
+env/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Playwright
+playwright-report/
+test-results/
+blob-report/
+
+# Recorded artifacts (may contain credentials/tokens)
+session.har
+auth.json
+raw_meta.json
+*.har
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# OS
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Secrets & environment
+.env
+.env.*
+!.env.example
+credentials.json
+*.pem
+*.key
+
+# Node / frontend (if added later)
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
