@@ -108,9 +108,54 @@ class TestLoadFlowModule:
             runner._load_flow_module("nonexistent_task")
 
 
-# ─── Tests for _build_ctx ─────────────────────────────────────────
+# ─── Tests for _validate_inputs ────────────────────────────────────
 
-class TestBuildCtx:
+class TestValidateInputs:
+    def test_valid_inputs_pass(self, example_task_dir):
+        manifest = runner._load_manifest("example_task")
+        inputs = {"target_url": "https://api.example.com"}
+        runner._validate_inputs(manifest, inputs, "example_task")
+
+    def test_missing_required_inputs_fail(self, example_task_dir):
+        manifest = runner._load_manifest("example_task")
+        inputs = {}
+        with pytest.raises(Exception):
+            runner._validate_inputs(manifest, inputs, "example_task")
+
+    def test_invalid_type_fail(self, example_task_dir):
+        manifest = runner._load_manifest("example_task")
+        inputs = {"target_url": 123}
+        with pytest.raises(Exception):
+            runner._validate_inputs(manifest, inputs, "example_task")
+
+    def test_additional_properties_fail(self, example_task_dir):
+        manifest = runner._load_manifest("example_task")
+        inputs = {"target_url": "https://api.example.com", "extra": "value"}
+        with pytest.raises(Exception):
+            runner._validate_inputs(manifest, inputs, "example_task")
+
+    def test_valid_method_pass(self, example_task_dir):
+        manifest = runner._load_manifest("example_task")
+        inputs = {"target_url": "https://api.example.com", "method": "POST"}
+        runner._validate_inputs(manifest, inputs, "example_task")
+
+    def test_invalid_method_fail(self, example_task_dir):
+        manifest = runner._load_manifest("example_task")
+        inputs = {"target_url": "https://api.example.com", "method": "INVALID"}
+        with pytest.raises(Exception):
+            runner._validate_inputs(manifest, inputs, "example_task")
+
+    def test_valid_payload_pass(self, example_task_dir):
+        manifest = runner._load_manifest("example_task")
+        inputs = {"target_url": "https://api.example.com", "payload": {"key": "value"}}
+        runner._validate_inputs(manifest, inputs, "example_task")
+
+    def test_invalid_payload_fail(self, example_task_dir):
+        manifest = runner._load_manifest("example_task")
+        inputs = {"target_url": "https://api.example.com", "payload": "not-an-object"}
+        with pytest.raises(Exception):
+            runner._validate_inputs(manifest, inputs, "example_task")
+
     def test_builds_ctx_with_pre_injected_headers(self, example_task_dir):
         manifest = runner._load_manifest("example_task")
         auth = {"cookies": [{"name": "session_id", "value": "abc"}]}
@@ -259,6 +304,23 @@ class TestRunnerMain:
         output = json.loads(result.stderr)
         assert output["status"] == "error"
         assert "error" in output
+
+    def test_fails_on_schema_validation(self, project_root):
+        result = subprocess.run(
+            [
+                sys.executable, "runner.py",
+                "--task", "example_task",
+                "--inputs", '{"method":"INVALID"}',
+            ],
+            capture_output=True,
+            text=True,
+            cwd=str(project_root),
+            timeout=10,
+        )
+        assert result.returncode == 1
+        output = json.loads(result.stdout)
+        assert output["status"] == "error"
+        assert "schema validation" in output["error"]
 
     def test_stdout_is_valid_json(self, project_root):
         result = subprocess.run(

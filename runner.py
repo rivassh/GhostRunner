@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 import httpx
+import jsonschema
 
 
 def _parse_args() -> dict:
@@ -103,6 +104,27 @@ def _load_manifest(task_name: str) -> dict:
         manifest["timeout_seconds"] = 30  # sensible default
 
     return manifest
+
+
+def _validate_inputs(
+    manifest: dict,
+    inputs: dict,
+    task_name: str,
+) -> None:
+    """Validate runtime inputs against manifest.inputs_schema.
+
+    Raises jsonschema.ValidationError with a clear message if validation fails.
+    """
+    schema = manifest.get("inputs_schema")
+    if schema is None:
+        return  # No schema defined; skip validation
+
+    try:
+        jsonschema.Draft202012Validator(schema).validate(inputs)
+    except jsonschema.ValidationError as e:
+        raise jsonschema.ValidationError(
+            f"Task '{task_name}' inputs failed schema validation: {e.message}"
+        ) from e
 
 
 def _load_flow_module(task_name: str) -> callable:
@@ -268,7 +290,10 @@ def main():
         # 1. Load manifest
         manifest = _load_manifest(task_name)
 
-        # 2. Load flow module + execute()
+        # 2. Validate inputs against manifest schema
+        _validate_inputs(manifest, inputs, task_name)
+
+        # 3. Load flow module + execute()
         flow_fn = _load_flow_module(task_name)
 
         # 3. Load auth state (preferred: pre-injected from Transformer layer)
@@ -293,6 +318,13 @@ def main():
         # Manifest or flow module not found
         err_output = json.dumps(
             {"task": task_name, "status": "error", "error": f"File not found: {e}"}
+        )
+        print(err_output)
+        sys.exit(1)
+    except jsonschema.ValidationError as e:
+        # Input validation failure
+        err_output = json.dumps(
+            {"task": task_name, "status": "error", "error": str(e)}
         )
         print(err_output)
         sys.exit(1)
