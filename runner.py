@@ -47,7 +47,21 @@ def _parse_args() -> dict:
         default="{}",
         help="JSON string of runtime inputs (default: '{}')",
     )
-    args = parser.parse_args()
+    try:
+        args = parser.parse_args()
+    except SystemExit as e:
+        # argparse exits with code 2 on missing required args
+        print(
+            json.dumps(
+                {
+                    "status": "error",
+                    "error": "Missing required argument --task",
+                    "task": "",
+                }
+            ),
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     try:
         inputs = json.loads(args.inputs)
@@ -185,7 +199,8 @@ def _execute_with_timeout(
         result = flow_fn(ctx, inputs)
         elapsed = int((time.perf_counter() - start) * 1000)
         result["execution_time_ms"] = elapsed
-        return {"success": True, "result": result}
+        # Propagate the inner success/failure
+        return {"success": result.get("success", False), "result": result}
     except TimeoutExpired:
         return {
             "success": False,
@@ -210,7 +225,8 @@ def _determine_output(exec_result: dict, task_name: str) -> str:
     Strict contract: pure JSON on stdout only. No extraneous logs,
     warnings, or print statements should appear.
     """
-    status = exec_result.get("status", exec_result.get("success", False) and "success" or "failed")
+    success = exec_result.get("success", False)
+    status = "success" if success else "failed"
 
     output = {
         "task": task_name,
@@ -223,6 +239,8 @@ def _determine_output(exec_result: dict, task_name: str) -> str:
         out_data = {k: v for k, v in result.items() if k != "execution_time_ms"}
         if out_data:
             output["data"] = out_data
+        if "execution_time_ms" in result:
+            output["execution_time_ms"] = result["execution_time_ms"]
 
     if exec_result.get("result", {}).get("error"):
         output["error"] = exec_result["result"]["error"]

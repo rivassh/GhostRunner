@@ -141,7 +141,7 @@ def parse_har_file(har_path: str) -> Dict[str, Any]:
 
     for entry in entries:
         # Find the first navigational entry (page.goto)
-        if not start_url and entry.get("request", {}).get("pageType") == "document":
+        if not start_url and entry.get("pageType") == "document":
             start_url = entry.get("request", {}).get("url", "")
 
         parsed = _parse_entry(entry)
@@ -165,7 +165,7 @@ def parse_har_file(har_path: str) -> Dict[str, Any]:
             filtered_count += 1
 
     return {
-        "start_url": start_url or inputs.get("target_url", ""),
+        "start_url": start_url,
         "endpoints": endpoints,
         "total_count": total_count,
         "filtered_count": filtered_count,
