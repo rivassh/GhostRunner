@@ -13,3 +13,16 @@ services:
       - PYTHONUNBUFFERED=1
     shm_size: 1gb
     restart: unless-stopped
+
+  runner:
+    build: .
+    image: vnc-runner:latest
+    container_name: vnc-runner
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - ./tasks:/app/tasks:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    shm_size: 512mb
+    entrypoint: ["python", "runner.py"]

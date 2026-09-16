@@ -13,4 +13,6 @@ RUN pip install --no-cache-dir -r requirements.txt \
 
 COPY . .
 
-CMD ["python", "recorder.py"]
+# Default to recorder; override with --task at runtime
+ENTRYPOINT ["python", "runner.py"]
+CMD ["--task", "example_task", "--inputs", "{}"]

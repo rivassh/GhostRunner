@@ -1,0 +1,30 @@
+{
+  "type": "api",
+  "timeout_seconds": 30,
+  "block_media": true,
+  "inputs_schema": {
+    "type": "object",
+    "properties": {
+      "target_url": {
+        "type": "string",
+        "description": "Full URL of the API endpoint to call"
+      },
+      "method": {
+        "type": "string",
+        "enum": ["GET", "POST", "PUT", "DELETE", "PATCH"],
+        "default": "GET",
+        "description": "HTTP method for the request"
+      },
+      "headers": {
+        "type": "object",
+        "description": "Additional headers to include in the request"
+      },
+      "payload": {
+        "type": ["object", "null"],
+        "description": "JSON payload for POST/PUT/PATCH requests"
+      }
+    },
+    "required": ["target_url"],
+    "additionalProperties": false
+  }
+}
